@@ -9,16 +9,11 @@ public class Book {
     private String copyrightDate;
     private Boolean available = true;
 
-    public Book(int id, String title, String author, String publisher, String copyrightDate){
-        this.id = id;
+    public Book(String title, String author, String publisher, String copyrightDate){
         this.title = title;
         this.author = author;
         this.publisher = publisher;
         this.copyrightDate = copyrightDate;
-    }
-
-    public int getId(){
-        return id;
     }
 
     public String getTitle(){
@@ -39,6 +34,10 @@ public class Book {
 
     public Boolean isAvailable() {
         return available;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public void setAvailable(boolean available){
