@@ -8,10 +8,9 @@ public class Member {
     private int id;
     private String name;
     private String email;
-    private List<Book> borrowedBooks = new ArrayList<>();;
+    private List<Book> borrowedBooks = new ArrayList<>();
 
-    public Member(int id, String name, String email) {
-        this.id = id;
+    public Member(String name, String email) {
         this.name = name;
         this.email = email;
     }
@@ -30,6 +29,10 @@ public class Member {
 
     public List<Book> getBorrowedBooks() {
         return borrowedBooks;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     @Override
