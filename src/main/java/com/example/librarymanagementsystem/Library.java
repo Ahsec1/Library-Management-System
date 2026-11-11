@@ -22,31 +22,48 @@ public class Library {
         }
     }
 
+    public int findOrCreateAuthor(Connection conn, String name) throws SQLException{
+        String sql = """
+                    INSERT INTO authors (name)
+                    VALUES (?)
+                    ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+                    RETURNING id
+                    """;
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, name);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                rs.next();
+                return rs.getInt("id");
+            }
+        }
+    }
+
     public void addBook (Book book) throws SQLException {
         String sql = """
                 INSERT INTO books
-                (title, author, publisher, copyright_date, available)
+                (title, author_id, publisher, copyright_date, available)
                 VALUES (?, ?, ?, ?, ?)
                 """;
 
-        try (Connection conn = DB.connect();
-             PreparedStatement pstmt = conn.prepareStatement(
-                     sql, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection conn = DB.connect()) {
+            int authorId = findOrCreateAuthor(conn, book.getAuthor());
 
-            pstmt.setString(1, book.getTitle());
-            pstmt.setString(2, book.getAuthor());
-            pstmt.setString(3, book.getPublisher());
-            pstmt.setString(4, book.getCopyrightDate());
-            pstmt.setBoolean(5, book.isAvailable());
+            try (PreparedStatement pstmt = conn.prepareStatement(
+                    sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            pstmt.executeUpdate();
+                pstmt.setString(1, book.getTitle());
+                pstmt.setInt(2, authorId);
+                pstmt.setString(3, book.getPublisher());
+                pstmt.setString(4, book.getCopyrightDate());
+                pstmt.setBoolean(5, book.isAvailable());
+                pstmt.executeUpdate();
 
-            try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                if (rs.next()) {
-                    book.setId(rs.getInt(1));
+                try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        book.setId(rs.getInt(1));
+                    }
                 }
             }
-
             System.out.println("Book successfully added!");
         }
     }
@@ -224,10 +241,11 @@ public class Library {
     public void loadBooks() throws SQLException {
 
         String sql = """
-                SELECT *
-                FROM books
-                ORDER BY id
-                """;
+                    SELECT b.id, b.title, a.name AS author, b.publisher, b.copyright_date, b.available
+                    FROM books b
+                    INNER JOIN authors a ON b.author_id = a.id
+                    ORDER BY b.id
+                    """;
 
         try (Connection conn = DB.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql);
@@ -258,10 +276,10 @@ public class Library {
     public void loadMembers() throws SQLException {
 
         String sql = """
-                SELECT *
-                FROM members
-                ORDER BY id
-                """;
+                    SELECT *
+                    FROM members
+                    ORDER BY id
+                    """;
 
         try (Connection conn = DB.connect();
              PreparedStatement pstmt = conn.prepareStatement(sql);
@@ -284,9 +302,10 @@ public class Library {
 
     private void loadBorrowedBooks(Connection conn, Member member) throws SQLException {
         String sql = """
-                    SELECT b.id, b.title, b.author, b.publisher, b.copyright_date
+                    SELECT b.id, b.title, a.name AS author, b.publisher, b.copyright_date
                     FROM loan l
-                    JOIN books b ON l.book_id = b.id
+                    INNER JOIN books b ON l.book_id = b.id
+                    INNER JOIN authors a ON b.author_id = a.id
                     WHERE l.member_id = ?
                     ORDER BY b.id
                     """;
@@ -316,9 +335,9 @@ public class Library {
                     b.id AS book_id,
                     b.title AS book_title
                 FROM loan l
-                JOIN members m
+                INNER JOIN members m
                     ON l.member_id = m.id
-                JOIN books b
+                INNER JOIN books b
                     ON l.book_id = b.id
                 ORDER BY m.id, b.id
                 """;
@@ -332,7 +351,7 @@ public class Library {
                 System.out.println(
                         "Member ID: " + rs.getInt("member_id")
                         + " | " + rs.getString("member_name")
-                        + " | Book ID: " + rs.getInt("book_id")
+                        + " >>> Book ID: " + rs.getInt("book_id")
                         + " | " + rs.getString("book_title")
                 );
             }
