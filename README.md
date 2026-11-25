@@ -1,6 +1,8 @@
 # Library-Management-System
 A library management system that can borrow and return books with exceptions
 
+[![CI](https://github.com/Ahsec1/library-management-system/actions/workflows/ci.yml/badge.svg)](https://github.com/Ahsec1/library-management-system/actions/workflows/ci.yml)
+
 ## Features
 
 - Add sample members and books
